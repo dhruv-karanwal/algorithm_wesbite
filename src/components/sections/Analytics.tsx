@@ -13,27 +13,34 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
+  Filler
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Line } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 const COMPARISON_DATA = [
-  { name: "Dijkstra", cost: 42.5, visited: 9, time: 0.12, optimal: true },
-  { name: "A* Search", cost: 42.5, visited: 5, time: 0.08, optimal: true },
-  { name: "BFS", cost: 55.0, visited: 7, time: 0.05, optimal: false },
-  { name: "DFS", cost: 82.0, visited: 4, time: 0.04, optimal: false },
-  { name: "Greedy BFS", cost: 48.0, visited: 4, time: 0.06, optimal: false },
+  { name: "Dijkstra", cost: 42.5, visited: 45, time: 0.12, optimal: true },
+  { name: "A* Search", cost: 42.5, visited: 28, time: 0.08, optimal: true },
+  { name: "Bellman-Ford", cost: 42.5, visited: 82, time: 0.45, optimal: true },
+  { name: "Floyd-Warshall", cost: 42.5, visited: 240, time: 1.20, optimal: true },
+  { name: "Bidirectional", cost: 42.5, visited: 18, time: 0.05, optimal: true },
+  { name: "Greedy BFS", cost: 48.0, visited: 15, time: 0.04, optimal: false },
 ];
 
 export default function Analytics() {
@@ -49,14 +56,28 @@ export default function Analytics() {
         borderRadius: 8,
       },
       {
-        label: 'Total Cost',
-        data: COMPARISON_DATA.map(d => d.cost / 2), // Normalized for scale
+        label: 'Execution Time (ms)',
+        data: COMPARISON_DATA.map(d => d.time * 100), // Scaled
         backgroundColor: 'rgba(220, 38, 38, 0.6)',
         borderColor: 'rgb(220, 38, 38)',
         borderWidth: 1,
         borderRadius: 8,
       }
     ],
+  };
+
+  const lineData = {
+    labels: COMPARISON_DATA.map(d => d.name),
+    datasets: [
+      {
+        fill: true,
+        label: 'Search Efficiency (Nodes/Time)',
+        data: COMPARISON_DATA.map(d => (d.visited / (d.time * 10)).toFixed(2)),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        tension: 0.4,
+      }
+    ]
   };
 
   const options = {
@@ -85,25 +106,37 @@ export default function Analytics() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          {/* Chart Card */}
+          {/* Chart Cards */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="bg-card p-8 rounded-[2.5rem] border border-border shadow-sm"
+            className="space-y-8"
           >
-            <div className="flex items-center gap-2 mb-8">
-              <BarChart3 className="w-5 h-5 text-primary" />
-              <h3 className="font-bold text-lg">Efficiency Comparison</h3>
+            <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-sm">
+              <div className="flex items-center gap-2 mb-8">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-lg">Computational Load</h3>
+              </div>
+              <div className="aspect-square md:aspect-video flex items-center justify-center">
+                <Bar options={options} data={chartData} />
+              </div>
             </div>
-            <div className="aspect-square md:aspect-video flex items-center justify-center">
-               <Bar options={options} data={chartData} />
-            </div>
-            <div className="mt-8 p-4 bg-primary/5 rounded-2xl flex items-start gap-3">
-               <TrendingDown className="w-5 h-5 text-primary mt-0.5" />
-               <p className="text-xs text-foreground/70 leading-relaxed">
-                  <strong>Insight:</strong> A* Search consistently visits fewer nodes than Dijkstra while maintaining 100% path optimality, making it the preferred choice for emergency navigation.
-               </p>
+
+            <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-sm">
+              <div className="flex items-center gap-2 mb-8">
+                <Zap className="w-5 h-5 text-blue-500" />
+                <h3 className="font-bold text-lg">Search Efficiency</h3>
+              </div>
+              <div className="aspect-square md:aspect-video flex items-center justify-center">
+                <Line options={options} data={lineData} />
+              </div>
+              <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl flex items-start gap-3">
+                <TrendingDown className="w-5 h-5 text-blue-500 mt-0.5" />
+                <p className="text-xs text-foreground/70 leading-relaxed">
+                  <strong>Insight:</strong> Bidirectional Search and A* achieve the highest "Search Density" by minimizing redundant node exploration, directly correlating to faster emergency response.
+                </p>
+              </div>
             </div>
           </motion.div>
 

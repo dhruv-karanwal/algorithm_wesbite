@@ -27,7 +27,7 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
-          {["Algorithms", "Simulation", "Analytics", "Scenarios"].map((item) => (
+          {["Flow", "Algorithms", "Math", "Simulation", "Analytics", "Scenarios"].map((item) => (
             <Link 
               key={item} 
               href={`#${item.toLowerCase()}`}
@@ -57,7 +57,7 @@ export default function Navbar() {
         className="md:hidden bg-white dark:bg-slate-950 overflow-hidden"
       >
         <div className="p-4 space-y-4">
-          {["Algorithms", "Simulation", "Analytics", "Scenarios"].map((item) => (
+          {["Flow", "Algorithms", "Math", "Simulation", "Analytics", "Scenarios"].map((item) => (
             <Link 
               key={item} 
               href={`#${item.toLowerCase()}`}

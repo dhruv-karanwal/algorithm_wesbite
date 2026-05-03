@@ -1,7 +1,8 @@
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import Hero from "@/components/sections/Hero";
 import AlgorithmExplorer from "@/components/sections/AlgorithmExplorer";
+import EngineFlow from "@/components/sections/EngineFlow";
+import MathModel from "@/components/sections/MathModel";
 import SimulationEngine from "@/components/simulation/SimulationEngine";
 import Analytics from "@/components/sections/Analytics";
 import Scenarios from "@/components/sections/Scenarios";
@@ -37,15 +38,17 @@ export default function Home() {
         </div>
       </section>
 
+      <EngineFlow />
+
       <AlgorithmExplorer />
+      
+      <MathModel />
       
       <SimulationEngine />
       
       <Analytics />
       
       <Scenarios />
-      
-      <AppShowcase />
       
       <section className="py-24 bg-slate-900 text-white text-center">
         <div className="container mx-auto px-4">
@@ -72,7 +75,6 @@ export default function Home() {
         </div>
       </section>
 
-      <Footer />
     </main>
   );
 }

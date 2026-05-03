@@ -11,7 +11,8 @@ import {
   Settings2,
   CheckCircle2,
   XCircle,
-  Truck
+  Truck,
+  Info
 } from "lucide-react";
 import { 
   Node, 
@@ -19,49 +20,50 @@ import {
   AlgorithmResult, 
   dijkstra, 
   aStar, 
-  bfs, 
-  dfs, 
+  bellmanFord, 
+  floydWarshall, 
+  bidirectionalSearch, 
   greedy 
 } from "@/lib/algorithms";
 
 // Initial City Graph Data
+// Initial City Graph Data
 const INITIAL_NODES: Node[] = [
-  { id: "1", name: "Station A", x: 100, y: 100 },
-  { id: "2", name: "Hub B", x: 300, y: 100 },
-  { id: "3", name: "Junction C", x: 500, y: 100 },
-  { id: "4", name: "Cross D", x: 100, y: 300 },
-  { id: "5", name: "Center E", x: 300, y: 300 },
-  { id: "6", name: "Junction F", x: 500, y: 300 },
-  { id: "7", name: "Hospital G", x: 100, y: 500 },
-  { id: "8", name: "Hub H", x: 300, y: 500 },
-  { id: "9", name: "Clinic I", x: 500, y: 500 },
+  { id: "1", name: "Station A", x: 100, y: 100, type: "station" },
+  { id: "2", name: "Hub B", x: 300, y: 100, type: "station" },
+  { id: "3", name: "Junction C", x: 500, y: 100, type: "station" },
+  { id: "4", name: "Cross D", x: 100, y: 300, type: "station" },
+  { id: "5", name: "Center E", x: 300, y: 300, type: "station" },
+  { id: "6", name: "Junction F", x: 500, y: 300, type: "station" },
+  { id: "7", name: "General Hosp G", x: 100, y: 500, type: "hospital", capabilities: ["trauma", "icu"], availability: 0.8 },
+  { id: "8", name: "Cardiac Hub H", x: 300, y: 500, type: "hospital", capabilities: ["cardiac", "icu"], availability: 0.6 },
+  { id: "9", name: "Local Clinic I", x: 500, y: 500, type: "clinic", capabilities: ["general"], availability: 0.9 },
 ];
 
 const INITIAL_EDGES: Edge[] = [
   { source: "1", destination: "2", weight: 10, trafficMultiplier: 1, isBlocked: false },
-  { source: "2", destination: "3", weight: 12, trafficMultiplier: 1, isBlocked: false },
-  { source: "1", destination: "4", weight: 8, trafficMultiplier: 1, isBlocked: false },
-  { source: "2", destination: "5", weight: 15, trafficMultiplier: 2, isBlocked: false },
-  { source: "3", destination: "6", weight: 10, trafficMultiplier: 1, isBlocked: false },
-  { source: "4", destination: "5", weight: 10, trafficMultiplier: 1, isBlocked: false },
-  { source: "5", destination: "6", weight: 10, trafficMultiplier: 1, isBlocked: false },
-  { source: "4", destination: "7", weight: 12, trafficMultiplier: 1, isBlocked: false },
-  { source: "5", destination: "8", weight: 10, trafficMultiplier: 1, isBlocked: false },
-  { source: "6", destination: "9", weight: 15, trafficMultiplier: 1, isBlocked: false },
-  { source: "7", destination: "8", weight: 10, trafficMultiplier: 1, isBlocked: false },
-  { source: "8", destination: "9", weight: 12, trafficMultiplier: 1, isBlocked: false },
-  // Reverse edges for bi-directional (simplification)
   { source: "2", destination: "1", weight: 10, trafficMultiplier: 1, isBlocked: false },
+  { source: "2", destination: "3", weight: 12, trafficMultiplier: 1, isBlocked: false },
   { source: "3", destination: "2", weight: 12, trafficMultiplier: 1, isBlocked: false },
+  { source: "1", destination: "4", weight: 8, trafficMultiplier: 1, isBlocked: false },
   { source: "4", destination: "1", weight: 8, trafficMultiplier: 1, isBlocked: false },
+  { source: "2", destination: "5", weight: 15, trafficMultiplier: 2, isBlocked: false },
   { source: "5", destination: "2", weight: 15, trafficMultiplier: 2, isBlocked: false },
+  { source: "3", destination: "6", weight: 10, trafficMultiplier: 1, isBlocked: false },
   { source: "6", destination: "3", weight: 10, trafficMultiplier: 1, isBlocked: false },
+  { source: "4", destination: "5", weight: 10, trafficMultiplier: 1, isBlocked: false },
   { source: "5", destination: "4", weight: 10, trafficMultiplier: 1, isBlocked: false },
+  { source: "5", destination: "6", weight: 10, trafficMultiplier: 1, isBlocked: false },
   { source: "6", destination: "5", weight: 10, trafficMultiplier: 1, isBlocked: false },
+  { source: "4", destination: "7", weight: 12, trafficMultiplier: 1, isBlocked: false },
   { source: "7", destination: "4", weight: 12, trafficMultiplier: 1, isBlocked: false },
+  { source: "5", destination: "8", weight: 10, trafficMultiplier: 1, isBlocked: false },
   { source: "8", destination: "5", weight: 10, trafficMultiplier: 1, isBlocked: false },
+  { source: "6", destination: "9", weight: 15, trafficMultiplier: 1, isBlocked: false },
   { source: "9", destination: "6", weight: 15, trafficMultiplier: 1, isBlocked: false },
+  { source: "7", destination: "8", weight: 10, trafficMultiplier: 1, isBlocked: false },
   { source: "8", destination: "7", weight: 10, trafficMultiplier: 1, isBlocked: false },
+  { source: "8", destination: "9", weight: 12, trafficMultiplier: 1, isBlocked: false },
   { source: "9", destination: "8", weight: 12, trafficMultiplier: 1, isBlocked: false },
 ];
 
@@ -73,6 +75,8 @@ export default function SimulationEngine() {
   const [activeAlgo, setActiveAlgo] = useState<string>("dijkstra");
   const [result, setResult] = useState<AlgorithmResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [incidentType, setIncidentType] = useState<"heart_attack" | "trauma" | "general">("general");
+  const [globalTraffic, setGlobalTraffic] = useState(1);
 
   const runSimulation = useCallback(() => {
     setIsRunning(true);
@@ -81,18 +85,42 @@ export default function SimulationEngine() {
     // Simulate thinking delay
     setTimeout(() => {
       let res: AlgorithmResult;
+      const nodesCopy = [...nodes];
+      const edgesCopy = edges.map(e => ({...e, trafficMultiplier: e.trafficMultiplier * globalTraffic}));
+
       switch (activeAlgo) {
-        case "dijkstra": res = dijkstra(nodes, edges, source, dest); break;
-        case "astar": res = aStar(nodes, edges, source, dest); break;
-        case "bfs": res = bfs(nodes, edges, source, dest); break;
-        case "dfs": res = dfs(nodes, edges, source, dest); break;
-        case "greedy": res = greedy(nodes, edges, source, dest); break;
-        default: res = dijkstra(nodes, edges, source, dest);
+        case "dijkstra": res = dijkstra(nodesCopy, edgesCopy, source, dest); break;
+        case "astar": res = aStar(nodesCopy, edgesCopy, source, dest); break;
+        case "bellman": res = bellmanFord(nodesCopy, edgesCopy, source, dest); break;
+        case "floyd": res = floydWarshall(nodesCopy, edgesCopy, source, dest); break;
+        case "bidirectional": res = bidirectionalSearch(nodesCopy, edgesCopy, source, dest); break;
+        case "greedy": res = greedy(nodesCopy, edgesCopy, source, dest); break;
+        default: res = dijkstra(nodesCopy, edgesCopy, source, dest);
       }
+
+      // Add explanation logic
+      const targetNode = nodes.find(n => n.id === dest);
+      if (targetNode) {
+        let explanation = `Route found to ${targetNode.name}. `;
+        if (incidentType === "heart_attack" && targetNode.capabilities?.includes("cardiac")) {
+          explanation += "This facility was prioritized for its specialized Cardiac unit.";
+        } else if (incidentType === "trauma" && targetNode.capabilities?.includes("trauma")) {
+          explanation += "Optimized for Trauma response capabilities.";
+        } else {
+          explanation += "Selected based on distance and current traffic levels.";
+        }
+        res.explanation = explanation;
+      }
+
       setResult(res);
       setIsRunning(false);
-    }, 600);
-  }, [activeAlgo, source, dest, nodes, edges]);
+    }, 400);
+  }, [activeAlgo, source, dest, nodes, edges, globalTraffic, incidentType]);
+
+  // Live recomputation
+  React.useEffect(() => {
+    runSimulation();
+  }, [source, dest, activeAlgo, globalTraffic, incidentType, edges]);
 
   const toggleBlock = (s: string, d: string) => {
     setEdges(prev => prev.map(e => {
@@ -136,21 +164,64 @@ export default function SimulationEngine() {
             <div className="glass-dark p-6 rounded-3xl border-slate-800 space-y-6">
               <div className="space-y-4">
                 <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Select Algorithm</label>
-                <div className="grid grid-cols-1 gap-2">
-                  {["dijkstra", "astar", "bfs", "dfs", "greedy"].map((a) => (
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "dijkstra", label: "Dijkstra" },
+                    { id: "astar", label: "A* Search" },
+                    { id: "bellman", label: "Bellman-Ford" },
+                    { id: "floyd", label: "Floyd-Warshall" },
+                    { id: "bidirectional", label: "Bidirectional" },
+                    { id: "greedy", label: "Greedy BFS" }
+                  ].map((a) => (
                     <button
-                      key={a}
-                      onClick={() => setActiveAlgo(a)}
-                      className={`px-4 py-3 rounded-xl text-left text-sm font-medium transition-all border ${
-                        activeAlgo === a 
+                      key={a.id}
+                      onClick={() => setActiveAlgo(a.id)}
+                      className={`px-3 py-2 rounded-xl text-left text-xs font-medium transition-all border ${
+                        activeAlgo === a.id 
                           ? "bg-primary border-primary text-white shadow-lg shadow-primary/20" 
                           : "bg-slate-800/50 border-slate-700 text-foreground/70 hover:border-slate-500"
                       }`}
                     >
-                      {a.charAt(0).toUpperCase() + a.slice(1).replace("astar", "A* Search").replace("greedy", "Greedy BFS")}
+                      {a.label}
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Incident Type</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "general", label: "General" },
+                    { id: "heart_attack", label: "Cardiac" },
+                    { id: "trauma", label: "Trauma" }
+                  ].map((i) => (
+                    <button
+                      key={i.id}
+                      onClick={() => setIncidentType(i.id as any)}
+                      className={`px-2 py-2 rounded-xl text-center text-[10px] font-bold uppercase transition-all border ${
+                        incidentType === i.id 
+                          ? "bg-emergency border-emergency text-white" 
+                          : "bg-slate-800/50 border-slate-700 text-foreground/50"
+                      }`}
+                    >
+                      {i.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold uppercase tracking-widest text-foreground/40">Global Traffic</label>
+                  <span className="text-xs font-mono text-primary">{globalTraffic}x</span>
+                </div>
+                <input 
+                  type="range" min="1" max="5" step="0.5" 
+                  value={globalTraffic}
+                  onChange={(e) => setGlobalTraffic(parseFloat(e.target.value))}
+                  className="w-full accent-primary"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -175,15 +246,6 @@ export default function SimulationEngine() {
                   </select>
                 </div>
               </div>
-
-              <button
-                onClick={runSimulation}
-                disabled={isRunning}
-                className="w-full py-4 bg-emergency text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-emergency/90 transition-all disabled:opacity-50"
-              >
-                {isRunning ? <RotateCcw className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-                {isRunning ? "Calculating..." : "Run Algorithm"}
-              </button>
             </div>
 
             {/* Live Results Card */}
@@ -216,6 +278,18 @@ export default function SimulationEngine() {
                       <div className="text-xl font-bold text-primary">{result.path.length} nodes</div>
                     </div>
                   </div>
+                  
+                  {result.explanation && (
+                    <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-2xl">
+                      <h5 className="text-[10px] uppercase font-bold text-primary mb-1 flex items-center gap-1">
+                        <Info className="w-3 h-3" /> Decision Explanation
+                      </h5>
+                      <p className="text-xs text-foreground/70 leading-relaxed italic">
+                        "{result.explanation}"
+                      </p>
+                    </div>
+                  )}
+
                   {result.path.length === 0 && (
                     <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-500 font-medium">
                       <AlertTriangle className="w-4 h-4" />
@@ -291,20 +365,22 @@ export default function SimulationEngine() {
                   const isSource = source === node.id;
                   const isDest = dest === node.id;
                   const isPath = result?.path.some(n => n.id === node.id);
+                  const isHospital = node.type === "hospital";
+                  const isClinic = node.type === "clinic";
 
                   return (
-                    <g key={node.id} className="cursor-pointer">
+                    <g key={node.id} className="cursor-pointer" onClick={() => { if (isSource) return; setDest(node.id); }}>
                       <motion.circle
-                        cx={node.x} cy={node.y} r="18"
+                        cx={node.x} cy={node.y} r={isHospital ? "22" : "18"}
                         fill={isSource ? "var(--color-emergency)" : isDest ? "#22c55e" : isPath ? "var(--color-primary)" : "white"}
                         stroke={isSource || isDest || isPath ? "none" : "#cbd5e1"}
                         strokeWidth="2"
-                        whileHover={{ scale: 1.2 }}
+                        whileHover={{ scale: 1.1 }}
                         className="shadow-xl"
                       />
                       <text
-                        x={node.x} y={node.y + 35}
-                        textAnchor="middle" fontSize="12" fontWeight="bold"
+                        x={node.x} y={node.y + 45}
+                        textAnchor="middle" fontSize="10" fontWeight="bold"
                         className="fill-foreground/80"
                       >
                         {node.name}
@@ -313,6 +389,12 @@ export default function SimulationEngine() {
                         <motion.g animate={{ y: [0, -5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
                            <Truck className="w-6 h-6 text-white" x={node.x - 12} y={node.y - 12} />
                         </motion.g>
+                      )}
+                      {isHospital && !isSource && !isDest && (
+                        <Plus className={`w-5 h-5 ${isPath ? "text-white" : "text-emergency"}`} x={node.x - 10} y={node.y - 10} />
+                      )}
+                      {isClinic && !isSource && !isDest && (
+                        <AlertTriangle className={`w-4 h-4 ${isPath ? "text-white" : "text-blue-500"}`} x={node.x - 8} y={node.y - 8} />
                       )}
                       {isDest && (
                         <CheckCircle2 className="w-5 h-5 text-white" x={node.x - 10} y={node.y - 10} />
